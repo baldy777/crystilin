@@ -2,8 +2,14 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ErrorCrystilin {
-    // #[from] genera automáticamente la conversión serde_json::Error -> ErrorCrystilin,
-    // lo que permite usar el operador `?` sobre resultados de serde_json.
     #[error("no se pudo interpretar la salida de lsblk: {0}")]
     JsonInvalido(#[from] serde_json::Error),
+
+    // El sistema operativo no pudo lanzar el programa (no instalado, sin permisos...).
+    #[error("no se pudo ejecutar lsblk: {0}")]
+    NoSePudoEjecutar(#[source] std::io::Error),
+
+    // El programa arrancó, pero terminó con código de error.
+    #[error("lsblk terminó con error (código {codigo:?}): {stderr}")]
+    LsblkFallo { codigo: Option<i32>, stderr: String },
 }

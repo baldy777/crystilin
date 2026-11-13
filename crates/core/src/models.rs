@@ -53,3 +53,17 @@ pub struct Disco {
     /// true si este disco contiene el sistema (`/`): nunca se podrá tocar.
     pub protegido: bool,
 }
+
+use std::fmt;
+
+impl fmt::Display for TipoDisco {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let texto = match self {
+            TipoDisco::Hdd => "HDD",
+            TipoDisco::Ssd => "SSD",
+            TipoDisco::Nvme => "NVMe",
+            TipoDisco::Usb => "USB",
+        };
+        f.pad(texto)
+    }
+}

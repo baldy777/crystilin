@@ -1,3 +1,5 @@
+use std::process::Command;
+
 use crate::errors::ErrorCrystilin;
 use crate::models::{Disco, LsblkSalida, NodoLsblk, TipoDisco};
 
@@ -5,6 +7,31 @@ use crate::models::{Disco, LsblkSalida, NodoLsblk, TipoDisco};
 pub fn parsear(json: &str) -> Result<LsblkSalida, ErrorCrystilin> {
     let salida = serde_json::from_str(json)?;
     Ok(salida)
+}
+
+/// Ejecuta `lsblk` en el sistema y devuelve los discos reales.
+pub fn listar_discos() -> Result<Vec<Disco>, ErrorCrystilin> {
+    let resultado = Command::new("lsblk")
+        .args([
+            "--json",
+            "--bytes",
+            "--output",
+            "NAME,PATH,MODEL,SIZE,TYPE,TRAN,ROTA,RM,MOUNTPOINTS",
+        ])
+        .output() // espera a que termine y captura stdout y stderr
+        .map_err(ErrorCrystilin::NoSePudoEjecutar)?;
+
+    if !resultado.status.success() {
+        return Err(ErrorCrystilin::LsblkFallo {
+            codigo: resultado.status.code(),
+            stderr: String::from_utf8_lossy(&resultado.stderr).trim().to_string(),
+        });
+    }
+
+    // stdout llega como bytes (Vec<u8>); lo convertimos a texto.
+    let texto = String::from_utf8_lossy(&resultado.stdout);
+    let salida = parsear(&texto)?;
+    Ok(a_discos(&salida))
 }
 
 /// Convierte la salida cruda de lsblk en la lista de discos reales.

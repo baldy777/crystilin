@@ -7,6 +7,8 @@
 pub mod adapters;
 pub mod errors;
 pub mod models;
+pub mod reglas;
+pub mod interpreter;
 
 pub fn saludo() -> &'static str {
     "crystilin: listo para revisar discos"

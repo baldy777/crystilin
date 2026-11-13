@@ -1,0 +1,68 @@
+# Reglas de interpretación SMART de crystilin.
+# {valor} se reemplaza por el número real medido.
+#
+# sentido = "mayor_es_peor": se alarma cuando valor >= umbral  (ej. temperatura)
+# sentido = "menor_es_peor": se alarma cuando valor <= umbral  (ej. repuesto disponible)
+
+[autoevaluacion]
+titulo = "Autoevaluación del disco"
+texto_ok = "El propio disco se revisó a sí mismo y dice que está bien."
+texto_fallo = "El propio disco reporta que está fallando. No confíes en él para guardar nada importante."
+
+[[regla]]
+metrica = "sectores_reasignados"
+sentido = "mayor_es_peor"
+umbral_amarillo = 1
+umbral_rojo = 50
+titulo = "Sectores reasignados"
+texto_verde = "No hay sectores dañados."
+texto_amarillo = "El disco ya marcó {valor} sectores como dañados y los reemplazó por reserva. Funciona, pero hay que vigilarlo y mantener copia de tus datos."
+texto_rojo = "El disco tiene {valor} sectores dañados. Es un desgaste serio y puede seguir empeorando."
+
+[[regla]]
+metrica = "desgaste_porcentaje"
+sentido = "mayor_es_peor"
+umbral_amarillo = 70
+umbral_rojo = 90
+titulo = "Desgaste del SSD"
+texto_verde = "El SSD ha gastado solo {valor} % de su vida útil."
+texto_amarillo = "El SSD ya gastó {valor} % de su vida útil. Le queda menos de un tercio."
+texto_rojo = "El SSD gastó {valor} % de su vida útil. Está cerca del final."
+
+[[regla]]
+metrica = "repuesto_disponible"
+sentido = "menor_es_peor"
+umbral_amarillo = 20
+umbral_rojo = 10
+titulo = "Reserva de repuesto"
+texto_verde = "Al SSD le queda {valor} % de celdas de repuesto."
+texto_amarillo = "Al SSD le queda solo {valor} % de celdas de repuesto."
+texto_rojo = "Al SSD casi no le quedan celdas de repuesto ({valor} %). Está por agotarse."
+
+[[regla]]
+metrica = "errores_de_medio"
+sentido = "mayor_es_peor"
+umbral_amarillo = 1
+umbral_rojo = 10
+titulo = "Errores de lectura o escritura"
+texto_verde = "No se han registrado errores en los datos."
+texto_amarillo = "El disco registró {valor} errores internos de datos. Conviene vigilarlo."
+texto_rojo = "El disco registró {valor} errores internos de datos. Es una señal seria de falla."
+
+[[regla]]
+metrica = "temperatura_c"
+sentido = "mayor_es_peor"
+umbral_amarillo = 55
+umbral_rojo = 70
+titulo = "Temperatura"
+texto_verde = "Temperatura normal ({valor} °C)."
+texto_amarillo = "El disco está caliente ({valor} °C). Revisa la ventilación."
+texto_rojo = "El disco está demasiado caliente ({valor} °C) y puede dañarse."
+
+[[regla]]
+metrica = "horas_encendido"
+sentido = "mayor_es_peor"
+umbral_amarillo = 20000
+titulo = "Horas de uso"
+texto_verde = "Tiene {valor} horas de uso."
+texto_amarillo = "Tiene {valor} horas de uso. Es un disco bastante usado."

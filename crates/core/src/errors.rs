@@ -18,4 +18,7 @@ pub enum ErrorCrystilin {
 
     #[error("dispositivo no válido: {0}")]
     DispositivoInvalido(String),
+
+    #[error("Las reglas de interpretación son inválidas: {0}")]
+    ReglasInvalidas(String),
 }

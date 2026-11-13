@@ -156,3 +156,136 @@ impl InformeSmart {
         }
     }
 }
+
+// ---------------------------------------------------------------
+// VEREDICTO (Fase 3)
+// ---------------------------------------------------------------
+
+/// El color del semáforo.
+///
+/// OJO: el ORDEN de las variantes importa. Con `PartialOrd` + `Ord`,
+/// Rust compara los enums por orden de declaración:
+///     Verde < Amarillo < Rojo
+/// Eso nos permite pedir "el peor" simplemente con `.max()`.
+/// (En Java tendrías que usar `compareTo` o ordinal() a mano.)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Semaforo {
+    Verde,
+    Amarillo,
+    Rojo,
+}
+
+/// Una observación concreta sobre el disco.
+/// Ejemplo: Amarillo, "Sectores reasignados", "Tiene 8 sectores dañados que..."
+#[derive(Debug, Clone, PartialEq)]
+pub struct Hallazgo {
+    pub semaforo: Semaforo,
+    pub titulo: String,
+    pub explicacion: String,
+}
+
+/// El resultado final de interpretar un `InformeSmart`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Veredicto {
+    /// Color global = el peor de todos los hallazgos.
+    pub semaforo: Semaforo,
+    pub hallazgos: Vec<Hallazgo>,
+}
+
+impl Veredicto {
+    /// Construye el veredicto a partir de los hallazgos.
+    /// `hallazgos` se recibe POR VALOR: la función se queda con el Vec (lo "mueve").
+    pub fn desde_hallazgos(hallazgos: Vec<Hallazgo>) -> Self {
+        // 1) Primero calculamos el color global, PRESTANDO el Vec con .iter().
+        //    `h.semaforo` se copia porque Semaforo es `Copy` (es un valor
+        //    pequeñito, como un int). Si no fuera Copy, esto no compilaría.
+        let semaforo = hallazgos
+            .iter()
+            .map(|h| h.semaforo)
+            .max()
+            .unwrap_or(Semaforo::Verde); // sin hallazgos = nada malo = verde
+
+        // 2) Y DESPUÉS movemos `hallazgos` dentro de la struct.
+        //    Si lo hiciéramos al revés, el Vec ya habría sido movido y
+        //    el paso 1 daría error "borrow of moved value".
+        Veredicto { semaforo, hallazgos }
+    }
+
+        /// Frase corta para el encabezado: "Disco sano", "Cuidado: ...", "Peligro: ...".
+    pub fn titular(&self) -> String {
+        // Nos quedamos solo con los hallazgos del MISMO color que el veredicto
+        // global: si el color es amarillo, listamos los amarillos; si es rojo, los rojos.
+        // `Vec<&str>` guarda PRÉSTAMOS de los títulos (no copia los Strings):
+        // viven mientras viva `self`, y Rust lo verifica solo.
+
+                // Sin ningún hallazgo no sabemos nada del disco: NO es "sano".
+        if self.hallazgos.is_empty() {
+            return "Sin datos suficientes para evaluar el disco".to_string();
+        }
+
+        let problemas: Vec<&str> = self
+            .hallazgos
+            .iter()
+            .filter(|h| h.semaforo == self.semaforo)
+            .map(|h| h.titulo.as_str())
+            .collect();
+
+        match self.semaforo {
+            Semaforo::Verde => "Disco sano".to_string(),
+            Semaforo::Amarillo => format!("Cuidado: {}", problemas.join(", ")),
+            Semaforo::Rojo => format!("Peligro: {}", problemas.join(", ")),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests_veredicto {
+    use super::*;
+
+    fn hallazgo(s: Semaforo) -> Hallazgo {
+        Hallazgo {
+            semaforo: s,
+            titulo: "prueba".to_string(),
+            explicacion: "prueba".to_string(),
+        }
+    }
+
+    #[test]
+    fn el_orden_del_semaforo_es_verde_amarillo_rojo() {
+        assert!(Semaforo::Verde < Semaforo::Amarillo);
+        assert!(Semaforo::Amarillo < Semaforo::Rojo);
+    }
+
+    #[test]
+    fn sin_hallazgos_el_veredicto_es_verde() {
+        let v = Veredicto::desde_hallazgos(vec![]);
+        assert_eq!(v.semaforo, Semaforo::Verde);
+    }
+
+    #[test]
+    fn el_peor_hallazgo_manda() {
+        let v = Veredicto::desde_hallazgos(vec![
+            hallazgo(Semaforo::Verde),
+            hallazgo(Semaforo::Rojo),
+            hallazgo(Semaforo::Amarillo),
+        ]);
+        assert_eq!(v.semaforo, Semaforo::Rojo);
+        assert_eq!(v.hallazgos.len(), 3);
+    }
+
+        #[test]
+    fn el_titular_resume_segun_el_color() {
+        assert_eq!(
+            Veredicto::desde_hallazgos(vec![]).titular(),
+            "Sin datos suficientes para evaluar el disco"
+        );
+        let v = Veredicto::desde_hallazgos(vec![
+            hallazgo(Semaforo::Verde),
+            hallazgo(Semaforo::Amarillo),
+        ]);
+        assert_eq!(v.titular(), "Cuidado: prueba");
+
+        let v = Veredicto::desde_hallazgos(vec![hallazgo(Semaforo::Rojo)]);
+        assert_eq!(v.titular(), "Peligro: prueba");
+    }
+}

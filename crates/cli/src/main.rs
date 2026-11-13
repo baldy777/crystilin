@@ -1,9 +1,10 @@
 use crystilin_core::adapters::lsblk::listar_discos;
+use crystilin_core::adapters::smartctl::{LectorSmart, ModoSmartctl, SmartctlReal};
+use crystilin_core::interpreter::interpretar;
+use crystilin_core::models::{Conexion, DetalleSmart, InformeSmart, Semaforo, Veredicto};
+use crystilin_core::reglas::Reglas;
 
 use std::fmt::Display;
-
-use crystilin_core::adapters::smartctl::{LectorSmart, ModoSmartctl, SmartctlReal};
-use crystilin_core::models::{Conexion, DetalleSmart, InformeSmart};
 
 fn main() -> anyhow::Result<()> {
     let discos = listar_discos()?;
@@ -28,10 +29,13 @@ fn main() -> anyhow::Result<()> {
         );
     }
 
-        println!("\n=== Lectura SMART (solo lectura) ===");
+    println!("\n=== Lectura SMART (solo lectura) ===");
     println!("Se pedirá tu contraseña de sudo para abrir los discos.\n");
 
     let lector = SmartctlReal { con_sudo: true }; // TEMPORAL: en la Fase 4 pasa a pkexec
+
+        // Se cargan UNA vez fuera del bucle. El `?` convierte ErrorCrystilin en anyhow::Error.
+    let reglas = Reglas::por_defecto()?;
 
     for disco in &discos {
         println!("{} ({})", disco.ruta, disco.modelo.as_deref().unwrap_or("modelo desconocido"));
@@ -45,7 +49,12 @@ fn main() -> anyhow::Result<()> {
 
         // Un fallo en un disco NO debe tumbar el programa entero: lo mostramos y seguimos.
         match lector.leer(&disco.ruta, modo) {
-            Ok(informe) => mostrar_informe(&informe),
+                        Ok(informe) => {
+                mostrar_informe(&informe);
+                println!();
+                let veredicto = interpretar(&informe, &reglas);
+                mostrar_veredicto(&veredicto);
+            },
             Err(e) => println!("  No se pudo leer el SMART: {e}"),
         }
         println!();
@@ -86,6 +95,31 @@ fn mostrar_informe(i: &InformeSmart) {
         DetalleSmart::SinDatos => {
             println!("  Este dispositivo no expone datos SMART.");
         }
+    }
+}
+
+
+/// Códigos ANSI: secuencias de texto que la terminal interpreta como color.
+/// "\x1b[32m" = verde, "\x1b[33m" = amarillo, "\x1b[31m" = rojo, "\x1b[0m" = quitar color.
+const RESET: &str = "\x1b[0m";
+
+fn color(s: Semaforo) -> &'static str {
+    match s {
+        Semaforo::Verde => "\x1b[32m",
+        Semaforo::Amarillo => "\x1b[33m",
+        Semaforo::Rojo => "\x1b[31m",
+    }
+}
+
+fn mostrar_veredicto(v: &Veredicto) {
+    // Sin hallazgos: no hay semáforo que mostrar, solo el aviso.
+    if v.hallazgos.is_empty() {
+        println!("  ○ {}", v.titular());
+        return;
+    }
+    println!("  {}● {}{}", color(v.semaforo), v.titular(), RESET);
+    for h in &v.hallazgos {
+        println!("    {}●{} {}: {}", color(h.semaforo), RESET, h.titulo, h.explicacion);
     }
 }
 

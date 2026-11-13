@@ -12,4 +12,10 @@ pub enum ErrorCrystilin {
     // El programa arrancó, pero terminó con código de error.
     #[error("lsblk terminó con error (código {codigo:?}): {stderr}")]
     LsblkFallo { codigo: Option<i32>, stderr: String },
+
+    #[error("smartctl falló (código {codigo:?}): {mensajes}")]
+    SmartctlFallo { codigo: Option<i32>, mensajes: String },
+
+    #[error("dispositivo no válido: {0}")]
+    DispositivoInvalido(String),
 }

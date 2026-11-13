@@ -84,3 +84,75 @@ impl fmt::Display for Medio {
         f.pad(texto)
     }
 }
+
+// ---------- SMART (modelo de dominio) ----------
+
+/// Un atributo SMART de un disco ATA (HDD o SSD SATA).
+#[derive(Debug, Clone, PartialEq)]
+pub struct AtributoAta {
+    pub id: u32,
+    pub nombre: String,
+    pub valor: u32,       // valor normalizado actual (100 = nuevo, baja con el desgaste)
+    pub peor: u32,        // el peor valor que ha tenido
+    pub umbral: u32,      // si `valor` cae a este nivel, el fabricante considera fallo
+    pub raw_valor: u64,   // valor crudo: su significado depende del fabricante
+    pub raw_texto: String // cómo lo imprime smartctl, p. ej. "8 (0 1)"
+}
+
+/// Salud de un disco NVMe (campos fijos del estándar NVMe).
+#[derive(Debug, Clone, PartialEq)]
+pub struct SaludNvme {
+    pub advertencia_critica: u32,
+    pub repuesto_disponible: u32,        // % de celdas de reserva que quedan
+    pub umbral_repuesto: u32,
+    pub porcentaje_usado: u32,           // desgaste: 0 = nuevo, 100 = vida útil agotada
+    pub unidades_escritas: u64,
+    pub unidades_leidas: u64,
+    pub errores_de_medio: u64,
+    pub apagados_inseguros: u64,
+    pub ciclos_de_encendido: u64,
+}
+
+/// Lo que cambia según el tipo de disco: es un "union type" de TypeScript.
+#[derive(Debug, Clone, PartialEq)]
+pub enum DetalleSmart {
+    Ata { atributos: Vec<AtributoAta> },
+    Nvme(SaludNvme),
+    /// Algunos USB no exponen SMART: hay que representarlo, no inventar datos.
+    SinDatos,
+}
+
+/// Informe SMART unificado: lo único que verá el resto del programa.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InformeSmart {
+    pub modelo: Option<String>,
+    pub serie: Option<String>,
+    pub aprobado: Option<bool>,          // veredicto global del propio disco
+    pub horas_encendido: Option<u64>,
+    pub temperatura_c: Option<i32>,
+    pub estado_smartctl: u32,            // exit_status: campo de bits, se interpreta en la Fase 3
+    pub detalle: DetalleSmart,
+}
+
+impl InformeSmart {
+    /// Sectores reasignados (solo discos ATA, atributo 5).
+    pub fn sectores_reasignados(&self) -> Option<u64> {
+        // `&self.detalle` PRESTA el campo (borrow): no lo movemos fuera de `self`.
+        match &self.detalle {
+            DetalleSmart::Ata { atributos } => atributos
+                .iter()
+                .find(|a| a.id == 5)
+                // Solo los 16 bits bajos son el contador real (65544 -> 8).
+                .map(|a| a.raw_valor & 0xFFFF),
+            _ => None,
+        }
+    }
+
+    /// Desgaste en % (por ahora solo NVMe; los SSD SATA lo veremos con el Kingston).
+    pub fn desgaste_porcentaje(&self) -> Option<u32> {
+        match &self.detalle {
+            DetalleSmart::Nvme(n) => Some(n.porcentaje_usado),
+            _ => None,
+        }
+    }
+}

@@ -1,1 +1,3 @@
-pub mod lsblk;
+pub mod lsblk; 
+
+pub mod smartctl;

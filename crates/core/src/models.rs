@@ -31,3 +31,25 @@ pub struct NodoLsblk {
     #[serde(default)]
     pub children: Vec<NodoLsblk>,
 }
+
+/// Clase de disco, deducida de los campos `tran` y `rota` de lsblk.
+/// En Java sería un `enum` simple; en TypeScript, una union de strings literales.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TipoDisco {
+    Hdd,
+    Ssd,
+    Nvme,
+    Usb,
+}
+
+/// Lo que ve el resto del programa. No sabe nada de lsblk.
+#[derive(Debug, Clone)]
+pub struct Disco {
+    pub ruta: String, // "/dev/nvme0n1"
+    pub modelo: Option<String>,
+    pub tamano_bytes: u64,
+    pub tipo: TipoDisco,
+    pub removible: bool,
+    /// true si este disco contiene el sistema (`/`): nunca se podrá tocar.
+    pub protegido: bool,
+}

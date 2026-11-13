@@ -1,0 +1,79 @@
+{
+   "blockdevices": [
+      {
+         "name": "zram0",
+         "path": "/dev/zram0",
+         "model": null,
+         "size": 8589934592,
+         "type": "disk",
+         "tran": null,
+         "rota": false,
+         "rm": false,
+         "mountpoints": [
+             "[SWAP]"
+         ]
+      },{
+         "name": "nvme0n1",
+         "path": "/dev/nvme0n1",
+         "model": "SAMSUNG MZAL8512HDLU-00BLL",
+         "size": 512110190592,
+         "type": "disk",
+         "tran": "nvme",
+         "rota": false,
+         "rm": false,
+         "mountpoints": [],
+         "children": [
+            {
+               "name": "nvme0n1p1",
+               "path": "/dev/nvme0n1p1",
+               "model": null,
+               "size": 629145600,
+               "type": "part",
+               "tran": "nvme",
+               "rota": false,
+               "rm": false,
+               "mountpoints": [
+                   "/boot/efi"
+               ]
+            },{
+               "name": "nvme0n1p2",
+               "path": "/dev/nvme0n1p2",
+               "model": null,
+               "size": 2147483648,
+               "type": "part",
+               "tran": "nvme",
+               "rota": false,
+               "rm": false,
+               "mountpoints": [
+                   "/boot"
+               ]
+            },{
+               "name": "nvme0n1p3",
+               "path": "/dev/nvme0n1p3",
+               "model": null,
+               "size": 509332160512,
+               "type": "part",
+               "tran": "nvme",
+               "rota": false,
+               "rm": false,
+               "mountpoints": [],
+               "children": [
+                  {
+                     "name": "luks-56a408c9-9bf7-44ce-bf66-47d63a66d719",
+                     "path": "/dev/mapper/luks-56a408c9-9bf7-44ce-bf66-47d63a66d719",
+                     "model": null,
+                     "size": 509315383296,
+                     "type": "crypt",
+                     "tran": null,
+                     "rota": false,
+                     "rm": false,
+                     "mountpoints": [
+                         "/home", "/"
+                     ]
+                  }
+               ]
+            }
+         ]
+      }
+   ]
+}

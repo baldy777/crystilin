@@ -131,4 +131,21 @@ mod tests {
         assert!(discos[0].removible);
         assert!(!discos[0].protegido);
     }
+
+        const FIXTURE_HDD_USB: &str =
+        include_str!("../../../../tests/fixtures/lsblk_nvme_y_hdd_usb.json");
+
+    #[test]
+    fn hdd_en_usb_no_esta_protegido_y_el_nvme_si() {
+        let discos = a_discos(&parsear(FIXTURE_HDD_USB).unwrap());
+        assert_eq!(discos.len(), 2);
+
+        let sdb = discos.iter().find(|d| d.ruta == "/dev/sdb").unwrap();
+        assert_eq!(sdb.conexion, Conexion::Usb);
+        assert_eq!(sdb.medio, Medio::Hdd);
+        assert!(!sdb.protegido);
+
+        let nvme = discos.iter().find(|d| d.ruta == "/dev/nvme0n1").unwrap();
+        assert!(nvme.protegido);
+    }
 }

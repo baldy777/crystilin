@@ -3,21 +3,22 @@ use crystilin_core::adapters::lsblk::listar_discos;
 fn main() -> anyhow::Result<()> {
     let discos = listar_discos()?;
 
-    println!(
-        "{:<16} {:<28} {:>10}  {:<5} {}",
-        "DISPOSITIVO", "MODELO", "TAMAÑO", "TIPO", "ESTADO"
+        println!(
+        "{:<16} {:<28} {:>10}  {:<6} {:<5} {}",
+        "DISPOSITIVO", "MODELO", "TAMAÑO", "CONEX.", "MEDIO", "ESTADO"
     );
 
     for d in &discos {
         let modelo = d.modelo.as_deref().unwrap_or("(desconocido)");
         let estado = if d.protegido { "PROTEGIDO (sistema)" } else { "" };
 
-        println!(
-            "{:<16} {:<28} {:>10}  {:<5} {}",
+                println!(
+            "{:<16} {:<28} {:>10}  {:<6} {:<5} {}",
             d.ruta,
             modelo,
             formatear_tamano(d.tamano_bytes),
-            d.tipo,
+            d.conexion,
+            d.medio,
             estado
         );
     }

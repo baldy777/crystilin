@@ -32,14 +32,20 @@ pub struct NodoLsblk {
     pub children: Vec<NodoLsblk>,
 }
 
-/// Clase de disco, deducida de los campos `tran` y `rota` de lsblk.
-/// En Java sería un `enum` simple; en TypeScript, una union de strings literales.
+/// Cómo se conecta el disco al equipo.
 #[derive(Debug, Clone, PartialEq)]
-pub enum TipoDisco {
+pub enum Conexion {
+    Nvme,
+    Sata,
+    Usb,
+    Otra,
+}
+
+/// De qué tecnología es el medio de almacenamiento.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Medio {
     Hdd,
     Ssd,
-    Nvme,
-    Usb,
 }
 
 /// Lo que ve el resto del programa. No sabe nada de lsblk.
@@ -48,21 +54,32 @@ pub struct Disco {
     pub ruta: String, // "/dev/nvme0n1"
     pub modelo: Option<String>,
     pub tamano_bytes: u64,
-    pub tipo: TipoDisco,
-    pub removible: bool,
+    pub conexion: Conexion,
+    pub medio: Medio,
+    pub removible: bool, // poco fiable en discos externos
     /// true si este disco contiene el sistema (`/`): nunca se podrá tocar.
     pub protegido: bool,
 }
 
 use std::fmt;
 
-impl fmt::Display for TipoDisco {
+impl fmt::Display for Conexion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let texto = match self {
-            TipoDisco::Hdd => "HDD",
-            TipoDisco::Ssd => "SSD",
-            TipoDisco::Nvme => "NVMe",
-            TipoDisco::Usb => "USB",
+            Conexion::Nvme => "NVMe",
+            Conexion::Sata => "SATA",
+            Conexion::Usb => "USB",
+            Conexion::Otra => "Otra",
+        };
+        f.pad(texto)
+    }
+}
+
+impl fmt::Display for Medio {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let texto = match self {
+            Medio::Hdd => "HDD",
+            Medio::Ssd => "SSD",
         };
         f.pad(texto)
     }

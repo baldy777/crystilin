@@ -1,8 +1,7 @@
 use std::process::Command;
 
 use crate::errors::ErrorCrystilin;
-use crate::models::{Disco, LsblkSalida, NodoLsblk, TipoDisco};
-
+use crate::models::{Conexion, Disco, LsblkSalida, Medio, NodoLsblk};
 /// Convierte el texto JSON de lsblk en structs.
 pub fn parsear(json: &str) -> Result<LsblkSalida, ErrorCrystilin> {
     let salida = serde_json::from_str(json)?;
@@ -34,32 +33,34 @@ pub fn listar_discos() -> Result<Vec<Disco>, ErrorCrystilin> {
     Ok(a_discos(&salida))
 }
 
-/// Convierte la salida cruda de lsblk en la lista de discos reales.
 pub fn a_discos(salida: &LsblkSalida) -> Vec<Disco> {
     salida
         .blockdevices
         .iter()
-        // Solo discos, y fuera los de memoria comprimida (zram0 es swap, no un disco).
         .filter(|n| n.tipo == "disk" && !n.name.starts_with("zram"))
         .map(|n| Disco {
             ruta: n.path.clone(),
             modelo: n.model.clone(),
             tamano_bytes: n.size,
-            tipo: clasificar(n),
+            conexion: conexion_de(n),
+            medio: medio_de(n),
             removible: n.rm,
             protegido: contiene_raiz(n),
         })
         .collect()
 }
 
-/// Deduce el tipo de disco. El orden importa: un USB-SSD debe salir como USB.
-fn clasificar(n: &NodoLsblk) -> TipoDisco {
+fn conexion_de(n: &NodoLsblk) -> Conexion {
     match n.tran.as_deref() {
-        Some("usb") => TipoDisco::Usb,
-        Some("nvme") => TipoDisco::Nvme,
-        _ if n.rota => TipoDisco::Hdd,
-        _ => TipoDisco::Ssd,
+        Some("usb") => Conexion::Usb,
+        Some("nvme") => Conexion::Nvme,
+        Some("sata") | Some("ata") => Conexion::Sata,
+        _ => Conexion::Otra,
     }
+}
+
+fn medio_de(n: &NodoLsblk) -> Medio {
+    if n.rota { Medio::Hdd } else { Medio::Ssd }
 }
 
 /// ¿Este nodo, o cualquiera de sus descendientes, está montado en "/"?
@@ -102,7 +103,8 @@ mod tests {
         assert_eq!(discos.len(), 1); // zram0 quedó fuera
         let d = &discos[0];
         assert_eq!(d.ruta, "/dev/nvme0n1");
-        assert_eq!(d.tipo, TipoDisco::Nvme);
+        assert_eq!(d.conexion, Conexion::Nvme);
+        assert_eq!(d.medio, Medio::Ssd);
         assert!(d.protegido, "el disco con / debe salir protegido");
     }
 
@@ -125,7 +127,7 @@ mod tests {
 
         let discos = a_discos(&parsear(json).unwrap());
         assert_eq!(discos.len(), 1);
-        assert_eq!(discos[0].tipo, TipoDisco::Usb);
+        assert_eq!(discos[0].conexion, Conexion::Usb);
         assert!(discos[0].removible);
         assert!(!discos[0].protegido);
     }
